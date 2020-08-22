@@ -513,8 +513,8 @@ To be called in status buffers' `kill-buffer-hook'."
   (when (and magit-todos-active-scan
              (process-live-p magit-todos-active-scan))
     (kill-process magit-todos-active-scan)
-    (when-let* ((buffer (process-buffer magit-todos-active-scan))
-                (alive (buffer-live-p buffer)))
+    (-when-let* ((buffer (process-buffer magit-todos-active-scan))
+                 (alive (buffer-live-p buffer)))
       (kill-buffer buffer))))
 
 (defun magit-todos--add-to-custom-type (symbol value)
@@ -596,13 +596,13 @@ Match items are a list of `magit-todos-item' found in PROCESS's buffer for RESUL
                 (while (re-search-forward (rx bol "+") hunk-end t)
                   ;; Since "git diff-index" doesn't accept PCREs to its "-G" option, we have to test the search regexp ourselves.
                   (when (re-search-forward search-regexp-elisp (line-end-position) t)
-                    (when-let* ((line (buffer-substring (line-beginning-position) (line-end-position)))
-                                (item (with-temp-buffer
-                                        ;; NOTE: We fake grep output by inserting the filename, line number, position, etc.
-                                        ;; This lets us use the same results regexp that's used for grep-like output.
-                                        (save-excursion
-                                          (insert filename ":" (number-to-string line-number) ":0: " line))
-                                        (magit-todos--line-item results-regexp filename))))
+                    (-when-let* ((line (buffer-substring (line-beginning-position) (line-end-position)))
+                                 (item (with-temp-buffer
+                                         ;; NOTE: We fake grep output by inserting the filename, line number, position, etc.
+                                         ;; This lets us use the same results regexp that's used for grep-like output.
+                                         (save-excursion
+                                           (insert filename ":" (number-to-string line-number) ":0: " line))
+                                         (magit-todos--line-item results-regexp filename))))
                       (push item items)))
                   (cl-incf line-number))))))
         (let ((magit-todos-section-heading heading))
@@ -613,13 +613,13 @@ Match items are a list of `magit-todos-item' found in PROCESS's buffer for RESUL
 See `magit-section-match'.  Also delete it from root section's children."
   (save-excursion
     (goto-char (point-min))
-    (when-let ((section (cl-loop until (magit-section-match condition)
-                                 ;; Use `forward-line' instead of `magit-section-forward' because
-                                 ;; sometimes it skips our section.
-                                 do (forward-line 1)
-                                 when (eobp)
-                                 return nil
-                                 finally return (magit-current-section))))
+    (-when-let* ((section (cl-loop until (magit-section-match condition)
+                                   ;; Use `forward-line' instead of `magit-section-forward' because
+                                   ;; sometimes it skips our section.
+                                   do (forward-line 1)
+                                   when (eobp)
+                                   return nil
+                                   finally return (magit-current-section))))
       ;; Delete the section from root section's children.  This makes the section-jumper command
       ;; work when a replacement section is inserted after deleting this section.
       (object-remove-from-list magit-root-section 'children section)
@@ -1426,15 +1426,15 @@ Used for e.g. Helm and Ivy."
 (defun magit-todos-candidates ()
   "Return list of (DISPLAY . ITEM) candidates for e.g. Helm and Ivy."
   ;; MAYBE: Update the cache appropriately from here.
-  (if-let* ((magit-status-buffer (magit-get-mode-buffer 'magit-status-mode))
-            (items (buffer-local-value 'magit-todos-item-cache magit-status-buffer)))
+  (-if-let* ((magit-status-buffer (magit-get-mode-buffer 'magit-status-mode))
+             (items (buffer-local-value 'magit-todos-item-cache magit-status-buffer)))
       ;; Use cached items.
       (cl-loop for item in items
                collect (magit-todos-item-cons item))
     ;; No cached items: run scan.
-    (when-let* ((items (funcall magit-todos-scanner :sync t
-                                :directory default-directory
-                                :depth magit-todos-depth)))
+    (-when-let* ((items (funcall magit-todos-scanner :sync t
+                                 :directory default-directory
+                                 :depth magit-todos-depth)))
       (cl-loop for item in items
                collect (magit-todos-item-cons item)))))
 
